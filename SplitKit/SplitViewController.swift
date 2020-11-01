@@ -16,6 +16,11 @@ open class SplitViewController: UIViewController {
     /// The ratio of the first child.
     @objc public var ratio: CGFloat = 0.65
     
+    /// The separator size, determines the width across which pan gestures will be seen
+    @objc public var separatorSize: CGFloat = 8.0
+    //fileprivate let hoverGesture = InstantHoverGestureRecognizer(target: self, action: #selector(hovering(_:)))   // Makes no difference
+    fileprivate let hoverGesture = UIHoverGestureRecognizer(target: self, action: #selector(hovering(_:)))
+    
     /// Specify the animation duration to change split orientation between horizontal to vertical and vice versa. Default is 0.25 seconds.
     @objc public var invertAnimationDuration : TimeInterval = 0.25
 
@@ -113,16 +118,16 @@ open class SplitViewController: UIViewController {
     @objc public var firstChild : UIViewController? {
         didSet {
             if let oldController = oldValue {
-                oldController.willMove(toParentViewController: nil)
+                oldController.willMove(toParent: nil)
                 oldController.view.removeFromSuperview()
-                oldController.removeFromParentViewController()
+                oldController.removeFromParent()
             }
             if let child = firstChild {
-                addChildViewController(child)
+                addChild(child)
                 child.view.frame = firstContainerView.bounds
                 child.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                 firstContainerView.addSubview(child.view)
-                child.didMove(toParentViewController: self)
+                child.didMove(toParent: self)
             }
             view.layoutIfNeeded()
         }
@@ -132,16 +137,16 @@ open class SplitViewController: UIViewController {
     @objc public var secondChild : UIViewController? {
         didSet {
             if let oldController = oldValue {
-                oldController.willMove(toParentViewController: nil)
+                oldController.willMove(toParent: nil)
                 oldController.view.removeFromSuperview()
-                oldController.removeFromParentViewController()
+                oldController.removeFromParent()
             }
             if let child = secondChild {
-                addChildViewController(child)
+                addChild(child)
                 child.view.frame = secondContainerView.bounds
                 child.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                 secondContainerView.addSubview(child.view)
-                child.didMove(toParentViewController: self)
+                child.didMove(toParent: self)
             }
             view.layoutIfNeeded()
         }
@@ -197,8 +202,8 @@ open class SplitViewController: UIViewController {
         } else {
             firstViewTopConstraint = NSLayoutConstraint(item: topLayoutGuide, attribute: .bottom, relatedBy: .equal, toItem: firstContainerView, attribute: .top, multiplier: 1, constant: 0)
             firstViewBottomConstraint = NSLayoutConstraint(item: bottomLayoutGuide, attribute: .top, relatedBy: .equal, toItem: firstContainerView, attribute: .bottom, multiplier: 1, constant: 0)
-            firstViewLeadingConstraint = NSLayoutConstraint(item: view, attribute: .leading, relatedBy: .equal, toItem: firstContainerView, attribute: .leading, multiplier: 1, constant: 0)
-            firstViewTrailingConstraint = NSLayoutConstraint(item: view, attribute: .trailing, relatedBy: .equal, toItem: firstContainerView, attribute: .trailing, multiplier: 1, constant: 0)
+            firstViewLeadingConstraint = NSLayoutConstraint(item: view!, attribute: .leading, relatedBy: .equal, toItem: firstContainerView, attribute: .leading, multiplier: 1, constant: 0)
+            firstViewTrailingConstraint = NSLayoutConstraint(item: view!, attribute: .trailing, relatedBy: .equal, toItem: firstContainerView, attribute: .trailing, multiplier: 1, constant: 0)
         }
         view.addConstraint(firstViewTopConstraint!)
         view.addConstraint(firstViewBottomConstraint!)
@@ -234,8 +239,8 @@ open class SplitViewController: UIViewController {
         } else {
             secondViewTopConstraint = NSLayoutConstraint(item: topLayoutGuide, attribute: .bottom, relatedBy: .equal, toItem: secondContainerView, attribute: .top, multiplier: 1, constant: 0)
             secondViewBottomConstraint = NSLayoutConstraint(item: bottomLayoutGuide, attribute: .top, relatedBy: .equal, toItem: secondContainerView, attribute: .bottom, multiplier: 1, constant: 0)
-            secondViewLeadingConstraint = NSLayoutConstraint(item: view, attribute: .leading, relatedBy: .equal, toItem: secondContainerView, attribute: .leading, multiplier: 1, constant: 0)
-            secondViewTrailingConstraint = NSLayoutConstraint(item: view, attribute: .trailing, relatedBy: .equal, toItem: secondContainerView, attribute: .trailing, multiplier: 1, constant: 0)
+            secondViewLeadingConstraint = NSLayoutConstraint(item: view!, attribute: .leading, relatedBy: .equal, toItem: secondContainerView, attribute: .leading, multiplier: 1, constant: 0)
+            secondViewTrailingConstraint = NSLayoutConstraint(item: view!, attribute: .trailing, relatedBy: .equal, toItem: secondContainerView, attribute: .trailing, multiplier: 1, constant: 0)
         }
         secondViewTopConstraint.isActive = false
         view.addConstraint(secondViewTopConstraint!)
@@ -266,7 +271,6 @@ open class SplitViewController: UIViewController {
         view.addConstraint(NSLayoutConstraint(item: horizontalSeparatorView, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: separatorSize))
         
         let horizontalPanGesture = InstantPanGestureRecognizer(target: self, action: #selector(horizontalPanGestureDidPan))
-        
         horizontalPanGesture.delaysTouchesBegan = false
         horizontalSeparatorView.addGestureRecognizer(horizontalPanGesture)
         
@@ -334,6 +338,8 @@ open class SplitViewController: UIViewController {
             break
         case .unspecified:
             arrangement = .vertical
+        @unknown default:
+            fatalError()
         }
         
         let horizontalRatio : CGFloat = ratio
@@ -352,6 +358,13 @@ open class SplitViewController: UIViewController {
     
     open override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        horizontalSeparatorHair.backgroundColor = UIColor.red
+        horizontalSeparatorWidthConstraint.constant = 8.0
+        //hoverGesture.delaysTouchesBegan = false     // Makes no difference
+        hoverGesture.delegate = self
+        //horizontalSeparatorHair.addGestureRecognizer(hoverGesture)
+        //verticalSeparatorHair.addGestureRecognizer(hoverGesture)
+        secondChild?.view.addGestureRecognizer(hoverGesture)
         if didAppearFirstRound == false {
             if #available(iOS 11.0, *) {
                 firstViewHeightConstraint.constant = (view.bounds.size.height - view.safeAreaInsets.top - view.safeAreaInsets.bottom) / 2.0
@@ -365,15 +378,15 @@ open class SplitViewController: UIViewController {
         //debugPrint(">>>>>>>> Split addObserver")
         
         // We do some magic to detect bottom safe area to react the the keyboard size change (appearance, disappearance, ecc)
-        NotificationCenter.default.addObserver(self, selector: #selector(updateRect(notification:)), name: NSNotification.Name.UIKeyboardWillChangeFrame, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateRect(notification:)), name: UIResponder.keyboardWillChangeFrameNotification, object: nil)
     }
     
     @objc func updateRect(notification: NSNotification) {
         //debugPrint(">>>>>>>> Split FIRED NOTIFICATION")
         
-        let initialRect = ((notification as NSNotification).userInfo![UIKeyboardFrameBeginUserInfoKey] as AnyObject).cgRectValue
+        let initialRect = ((notification as NSNotification).userInfo![UIResponder.keyboardFrameBeginUserInfoKey] as AnyObject).cgRectValue
         let _ = self.view.frame.size.height - self.view.convert(initialRect!, from: nil).origin.y
-        let keyboardRect = ((notification as NSNotification).userInfo![UIKeyboardFrameEndUserInfoKey] as AnyObject).cgRectValue
+        let keyboardRect = ((notification as NSNotification).userInfo![UIResponder.keyboardFrameEndUserInfoKey] as AnyObject).cgRectValue
         let newHeight = self.view.frame.size.height - self.view.convert(keyboardRect!, from: nil).origin.y
         
         self.bottomKeyboardHeight = newHeight
@@ -495,6 +508,18 @@ open class SplitViewController: UIViewController {
         }
         self.firstViewWidthRatioConstraint = NSLayoutConstraint(item: self.firstContainerView, attribute: .width, relatedBy: .equal, toItem: self.view, attribute: .width, multiplier: ratio, constant: 0)
         self.view.addConstraint(self.firstViewWidthRatioConstraint!)
+    }
+    
+    @objc private func hovering(_ recognizer: UIHoverGestureRecognizer) {
+        switch recognizer.state {
+        case .began, .changed:
+            NSCursor.resizeLeftRight.push()
+        case .ended:
+            NSCursor.current.pop()
+        default:
+            break
+        }
+        
     }
     
     @IBAction private func verticalPanGestureDidPan(_ sender: UIPanGestureRecognizer) {
@@ -644,9 +669,23 @@ open class SplitViewController: UIViewController {
                 break
             case .unspecified:
                 self.arrangement = .vertical
+            @unknown default:
+                fatalError()
             }
         }) { (context) in
 
         }
+    }
+}
+
+extension SplitViewController: UIGestureRecognizerDelegate {
+    
+    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        // Only receive the touch if it's in the popupView
+        return touch.view == gestureRecognizer.view
+    }
+    
+    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
 }
